@@ -11,7 +11,7 @@
 </head>
 
 <body>
-  <nav class="navbar navbar-expand-lg bg-body-tertiary">
+  <nav class="navbar navbar-expand-lg bg-body-dark">
     <div class="container-fluid">
       <a class="navbar-brand" href="#"></a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
@@ -23,9 +23,6 @@
           <li class="nav-item">
             <a class="nav-link active" aria-current="page" href="#">Home</a>
           </li>
-          <li class="nav-item">
-            <a class="nav-link" href="#">Link</a>
-          </li><a class="nav-link" href="#">Link</a>
         </ul>
       </div>
     </div>
@@ -36,29 +33,52 @@
         <div id="map"></div>
       </div>
       <div class="col-md-7">
-        <div class="row">
-          <div class="col-6">
-            <div class="card p-3" onmouseover="hover('seminar')" onmouseout="leave('seminar')">
-              <h1>Computer Science Seminar</h1>
-              <p>Nate Williams, Ted Wendt</p>
+        <div class="row d-flex">
+          {{range .Classes}}
+          <div class="col-sm-12 col-md-6 col-lg-6 col-xl-4 d-flex">
+            <div class="card m-1 p-3  d-flex flex-fill align-items-stretch" data-lat="{{.Room.Latitude}}"
+              data-long="{{.Room.Longitude}}" onmouseenter="hover(event)" onmouseleave="leave(event)">
+              <h1>{{.Name}}</h1>
+              <p>{{.Code}}</p>
+              <p>{{.Professor}}</p>
               <hr class="mt-0">
-              <p>SIMP 120</p>
-              <p>M-W-F: 9:30-10:50</p>
+              <p>{{.Room.Building.Name}}: {{.Room.Name}}</p>
             </div>
           </div>
-          <div class="col-6">
-            <div class="card p-3" onmouseover="hover('sacredart')" onmouseout="leave('sacredart')">
+          {{end}}
+          <!-- <div class="col-sm-12 col-md-6 col-lg-4 d-flex">
+            <div class="card m-1 p-3 d-flex flex-fill align-items-stretch" onmouseover="hover('sacredart')"
+              onmouseout="leave('sacredart')">
               <h1>Sacred Art</h1>
               <p>Hannah Hemphill</p>
               <hr class="mt-0">
               <p>STCH ???</p>
               <p>M-W-F: 11:00-12:15</p>
             </div>
+          </div>-->
+          <div class="col-sm-12 col-md-6 col-lg-6 col-xl-4 d-flex">
+            <div class="card m-1 p-3  flex-fill d-flex align-items-stretch">
+              <form action="/api/classes/add-class" method="POST">
+                <input name="name" type="text" class="form-control" placeholder="Class Name">
+                <input name="code" type="text" class="mt-1 form-control" placeholder="Course Code">
+                <input name="professor" type="text" class="mt-1 form-control" placeholder="Professor">
+                <hr class="mt-1">
+                <select name="building" id="buildingSelect" class="form-control" onchange="selectBuilding(event)">
+                  {{range .Buildings}}
+                  <option value="{{ .ID}}" data-lat="{{.Latitude}}" data-long="{{.Longitude}}" data-rooms="{{.Rooms}}">
+                    {{ .Name}}</option>
+                  {{end}}
+                </select>
+                <select name="roomId" id="roomsSelect" onchange="selectRoom(event)" class="mt-1 form-control">
+                </select>
+                <em>Click the map to create a new room</em>
+                <input type="submit" value="Submit" class="mt-1 btn btn-success">
+              </form>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
   </div>
   <style>
     #map {
@@ -73,36 +93,119 @@
     crossorigin="anonymous"></script>
   <script>
     CARROLL_COORDS = [46.60085, -112.03872]
-    markers = {}
-    function hover(name) {
-      names = {
-        'seminar': [46.599748, -112.037588],
-        'sacredart': [46.600466, -112.038373]
+    var marker
+    var hoverLocked = false
+    function hover(event) {
+      if (hoverLocked) {
+        return
       }
-      var marker = L.marker(names[name]).addTo(map);
-      map.flyTo(names[name], 19)
-      markers[name] = marker
+      const lat = event.target.dataset.lat
+      const long = event.target.dataset.long
+      if (marker != null) { marker.remove() }
+      marker = L.marker([lat, long]).addTo(map);
+      map.flyTo([lat, long], 20)
+
     }
     function leave(name) {
-      markers[name].remove()
+      if (hoverLocked) {
+        return
+      }
+      if (marker != null) { marker.remove() }
       map.flyTo(CARROLL_COORDS, 17)
     }
     function leaveEverywhere() {
-      for (const [name, marker] of Object.entries(markers)) {
-        marker.remove()
+      if (hoverLocked) {
+        return
       }
+      if (marker != null) { marker.remove() }
       map.flyTo(CARROLL_COORDS, 17)
     }
+    async function selectBuilding(event) {
+      hoverLocked = true
+      const select = event.target
+      const selectedBuilding = select.options[select.selectedIndex]
+      const buildingId = selectedBuilding.value;
+
+      map.flyTo([selectedBuilding.dataset.lat, selectedBuilding.dataset.long], 20)
+
+      // Make an API call to fetch room data based on the selected building
+      // Replace the API URL with your actual endpoint
+      const response = await fetch(`/api/rooms/${buildingId}`);
+      const rooms = await response.json();
+
+      // Update the roomsSelect dropdown with the fetched room data
+      const roomsSelect = document.getElementById('roomsSelect');
+      roomsSelect.innerHTML = ''; // Clear existing options
+
+      rooms.forEach((room) => {
+        const option = document.createElement('option');
+        option.value = room.ID; // Assuming room ID is used as the value
+        option.textContent = room.Name; // Assuming room name is displayed as text
+        option.dataset.lat = room.Latitude;
+        option.dataset.long = room.Longitude;
+        roomsSelect.appendChild(option);
+      });
+    }
+    async function selectRoom(event) {
+      hoverLocked = true
+      const select = event.target
+      const selectedRoom = select.options[select.selectedIndex]
+
+      if (marker != null) { marker.remove() }
+      marker = L.marker([selectedRoom.dataset.lat, selectedRoom.dataset.long]).addTo(map);
+      map.flyTo([selectedRoom.dataset.lat, selectedRoom.dataset.long], 19)
+    }
+
     var map = L.map('map').setView(CARROLL_COORDS, 17);
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 30,
       attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
     }).addTo(map);
 
-    function onMapClick(e) {
 
-      alert("You clicked the map at " + e.latlng);
-      //var marker = L.marker(e.latlng).addTo(map);
+    // Function to handle map click
+    async function onMapClick(e) {
+      // Assuming you have a global variable for the select element
+      const roomsSelect = document.getElementById('roomsSelect');
+      const buildingSelect = document.getElementById('buildingSelect'); // Add this line
+
+      // Prompt user for room name
+      const roomName = prompt('Enter room name:');
+      if (!roomName) {
+        // User canceled the prompt
+        return;
+      }
+
+      // Create an object with room data
+      const roomData = {
+        Name: roomName,
+        Latitude: e.latlng.lat,
+        Longitude: e.latlng.lng,
+        BuildingID: Number(buildingSelect.value),
+      };
+
+      // Make API call to submit room data
+      const response = await fetch('/api/rooms/add-room', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(roomData),
+      });
+
+      if (response.ok) {
+        // API call successful, parse the response
+        const { roomId } = await response.json();
+
+        // Add room as an option to the select element
+        const option = document.createElement('option');
+        option.value = roomId; // Assuming the ID is returned from the API
+        option.textContent = roomName;
+        option.dataset.lat = roomData.Latitude;
+        option.dataset.long = roomData.Longitude;
+        roomsSelect.appendChild(option);
+        hoverLocked = false
+      }
     }
 
     map.on('click', onMapClick);

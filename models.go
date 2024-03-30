@@ -1,8 +1,6 @@
 package main
 
 import (
-	"time"
-
 	"gorm.io/gorm"
 )
 
@@ -11,35 +9,20 @@ type Room struct {
 	gorm.Model
 	Name       string   // Room name
 	BuildingID uint     // Foreign key for the building (building ID)
-	Building   Building // Foreign key for the building (building ID)
+	Building   Building // The building associated with this room
 	Latitude   float64
 	Longitude  float64
-}
-
-// Professor represents a university professor.
-type Professor struct {
-	gorm.Model
-	Name    string   // Professor's name
-	Classes []*Class `gorm:"many2many:professor_classes;"` // Many-to-many relationship with classes
+	Classes    []Class // Classes held in this room
 }
 
 // Class represents a university class.
 type Class struct {
 	gorm.Model
-	Name         string       // Class name
-	Description  string       // Class description
-	RoomID       uint         // Foreign key for the room (room ID)
-	Room         Room         // Room associated with the class
-	Professors   []*Professor `gorm:"many2many:professor_classes;"` // Many-to-many relationship with professors
-	ClassPeriods []ClassPeriod
-}
-
-type ClassPeriod struct {
-	gorm.Model
-	ClassID   uint
-	Class     Class
-	StartTime time.Time
-	EndTime   time.Time
+	Name      string
+	Code      string `gorm:"unique"`
+	RoomID    uint   // Foreign key for the room (room ID)
+	Room      Room   // The room where this class is held
+	Professor string
 }
 
 // Building represents a building where rooms are located.
@@ -48,4 +31,5 @@ type Building struct {
 	Name      string
 	Latitude  float64
 	Longitude float64
+	Rooms     []Room // Rooms in this building
 }
