@@ -4,6 +4,9 @@ import (
 	"gorm.io/gorm"
 )
 
+// Database models
+// Author: Justin Forseth
+
 // Room represents a physical room where classes are held.
 type Room struct {
 	gorm.Model

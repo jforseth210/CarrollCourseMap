@@ -34,6 +34,7 @@
       </div>
       <div class="col-md-7">
         <div class="row d-flex">
+          <!-- Class cards -->
           {{range .Classes}}
           <div class="col-sm-12 col-md-6 col-lg-6 col-xl-4 d-flex">
             <div class="card m-1 p-3  d-flex flex-fill align-items-stretch" data-lat="{{.Room.Latitude}}"
@@ -46,16 +47,8 @@
             </div>
           </div>
           {{end}}
-          <!-- <div class="col-sm-12 col-md-6 col-lg-4 d-flex">
-            <div class="card m-1 p-3 d-flex flex-fill align-items-stretch" onmouseover="hover('sacredart')"
-              onmouseout="leave('sacredart')">
-              <h1>Sacred Art</h1>
-              <p>Hannah Hemphill</p>
-              <hr class="mt-0">
-              <p>STCH ???</p>
-              <p>M-W-F: 11:00-12:15</p>
-            </div>
-          </div>-->
+          <!-- End class cards -->
+          <!-- New class form -->
           <div class="col-sm-12 col-md-6 col-lg-6 col-xl-4 d-flex">
             <div class="card m-1 p-3  flex-fill d-flex align-items-stretch">
               <form action="/api/classes/add-class" method="POST">
@@ -76,11 +69,13 @@
               </form>
             </div>
           </div>
+          <!-- End new class form -->
         </div>
       </div>
     </div>
   </div>
   <style>
+    /* Force the map to have a height */
     #map {
       height: 80vh;
     }
@@ -91,125 +86,7 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
     integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
     crossorigin="anonymous"></script>
-  <script>
-    CARROLL_COORDS = [46.60085, -112.03872]
-    var marker
-    var hoverLocked = false
-    function hover(event) {
-      if (hoverLocked) {
-        return
-      }
-      const lat = event.target.dataset.lat
-      const long = event.target.dataset.long
-      if (marker != null) { marker.remove() }
-      marker = L.marker([lat, long]).addTo(map);
-      map.flyTo([lat, long], 20)
-
-    }
-    function leave(name) {
-      if (hoverLocked) {
-        return
-      }
-      if (marker != null) { marker.remove() }
-      map.flyTo(CARROLL_COORDS, 17)
-    }
-    function leaveEverywhere() {
-      if (hoverLocked) {
-        return
-      }
-      if (marker != null) { marker.remove() }
-      map.flyTo(CARROLL_COORDS, 17)
-    }
-    async function selectBuilding(event) {
-      hoverLocked = true
-      const select = event.target
-      const selectedBuilding = select.options[select.selectedIndex]
-      const buildingId = selectedBuilding.value;
-
-      map.flyTo([selectedBuilding.dataset.lat, selectedBuilding.dataset.long], 20)
-
-      // Make an API call to fetch room data based on the selected building
-      // Replace the API URL with your actual endpoint
-      const response = await fetch(`/api/rooms/${buildingId}`);
-      const rooms = await response.json();
-
-      // Update the roomsSelect dropdown with the fetched room data
-      const roomsSelect = document.getElementById('roomsSelect');
-      roomsSelect.innerHTML = ''; // Clear existing options
-
-      rooms.forEach((room) => {
-        const option = document.createElement('option');
-        option.value = room.ID; // Assuming room ID is used as the value
-        option.textContent = room.Name; // Assuming room name is displayed as text
-        option.dataset.lat = room.Latitude;
-        option.dataset.long = room.Longitude;
-        roomsSelect.appendChild(option);
-      });
-    }
-    async function selectRoom(event) {
-      hoverLocked = true
-      const select = event.target
-      const selectedRoom = select.options[select.selectedIndex]
-
-      if (marker != null) { marker.remove() }
-      marker = L.marker([selectedRoom.dataset.lat, selectedRoom.dataset.long]).addTo(map);
-      map.flyTo([selectedRoom.dataset.lat, selectedRoom.dataset.long], 19)
-    }
-
-    var map = L.map('map').setView(CARROLL_COORDS, 17);
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 30,
-      attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-    }).addTo(map);
-
-
-    // Function to handle map click
-    async function onMapClick(e) {
-      // Assuming you have a global variable for the select element
-      const roomsSelect = document.getElementById('roomsSelect');
-      const buildingSelect = document.getElementById('buildingSelect'); // Add this line
-
-      // Prompt user for room name
-      const roomName = prompt('Enter room name:');
-      if (!roomName) {
-        // User canceled the prompt
-        return;
-      }
-
-      // Create an object with room data
-      const roomData = {
-        Name: roomName,
-        Latitude: e.latlng.lat,
-        Longitude: e.latlng.lng,
-        BuildingID: Number(buildingSelect.value),
-      };
-
-      // Make API call to submit room data
-      const response = await fetch('/api/rooms/add-room', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(roomData),
-      });
-
-      if (response.ok) {
-        // API call successful, parse the response
-        const { roomId } = await response.json();
-
-        // Add room as an option to the select element
-        const option = document.createElement('option');
-        option.value = roomId; // Assuming the ID is returned from the API
-        option.textContent = roomName;
-        option.dataset.lat = roomData.Latitude;
-        option.dataset.long = roomData.Longitude;
-        roomsSelect.appendChild(option);
-        hoverLocked = false
-      }
-    }
-
-    map.on('click', onMapClick);
-  </script>
+  <script src="/static/main.js"></script>
 </body>
 
 </html>

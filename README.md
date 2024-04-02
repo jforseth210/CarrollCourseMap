@@ -16,3 +16,5 @@ cd EasyFileTransfer
 ```
 go run *.go
 ```
+
+Navigate to localhost:8080 in your browser
